@@ -47,21 +47,19 @@ ctx = webrtc_streamer(
     async_processing=True,
 )
 
-# Siapkan wadah (placeholder) di bawah kamera
+st.write("---") 
+
+# 1. Siapkan wadah di bawah kamera
 count_placeholder = st.empty()
 
-# Menangkap dan menampilkan jumlah di frontend selama kamera menyala
-if ctx.state.playing:
-    # Tampilan awal saat belum ada frame yang diproses
-    count_placeholder.write("Jumlah: 0")
-    
+# 2. Tampilkan teks default DI LUAR if, agar selalu muncul di HP sejak awal
+count_placeholder.write("Jumlah: 0")
+
+# 3. Update angka hanya jika kamera sudah benar-benar menyala dan diizinkan browser
+if ctx and ctx.state.playing:
     while True:
         try:
-            # Ambil nilai count dari antrean video
             count = result_queue.get(timeout=1.0)
-            
-            # Tulis jumlahnya di frontend dengan format yang diminta
             count_placeholder.write(f"Jumlah: {count}")
-            
         except queue.Empty:
             pass
