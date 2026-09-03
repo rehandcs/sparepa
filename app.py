@@ -6,7 +6,7 @@ from ultralytics import YOLO
 from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
 
 st.set_page_config(page_title="Counting Sparepart", layout="centered")
-st.title("Sistem Counting Sparepart Online")
+st.title("Counting")
 st.write("Tekan tombol **START** di bawah untuk menyalakan kamera HP/Laptop Anda.")
 
 # Load Model
