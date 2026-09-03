@@ -21,7 +21,7 @@ RTC_CONFIGURATION = RTCConfiguration(
     {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
 )
 
-# 1. Buat antrean (queue) untuk mengirim data dari video ke UI Streamlit
+# Buat antrean (queue) untuk mengirim data jumlah dari video ke UI Streamlit
 result_queue = queue.Queue()
 
 def video_frame_callback(frame):
@@ -30,14 +30,11 @@ def video_frame_callback(frame):
     results = model(img)
     annotated_img = results[0].plot()
     
+    # Hitung jumlah sparepart yang terdeteksi
     count = len(results[0].boxes)
     
-    # 2. Kirim nilai count ke antrean setiap kali frame diproses
+    # Kirim angka hitungan ke antrean
     result_queue.put(count)
-    
-    # (Opsional) Tetap tampilkan tulisan di dalam video
-    cv2.putText(annotated_img, f"Jumlah: {count}", (20, 50), 
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 3)
     
     return av.VideoFrame.from_ndarray(annotated_img, format="bgr24")
 
@@ -50,19 +47,21 @@ ctx = webrtc_streamer(
     async_processing=True,
 )
 
-# 3. Siapkan placeholder di frontend (di bawah letak kamera Streamlit)
-st.write("---") # Garis pemisah agar rapi
+# Siapkan wadah (placeholder) di bawah kamera
 count_placeholder = st.empty()
 
-# 4. Tampilkan "Jumlah: 0" sebagai default jika kamera menyala tapi belum ada deteksi
+# Menangkap dan menampilkan jumlah di frontend selama kamera menyala
 if ctx.state.playing:
-    count_placeholder.write("### Jumlah : 0")
+    # Tampilan awal saat belum ada frame yang diproses
+    count_placeholder.write("Jumlah: 0")
     
-    # Ambil data dari antrean terus-menerus
     while True:
         try:
+            # Ambil nilai count dari antrean video
             count = result_queue.get(timeout=1.0)
-            # 5. Timpa nilai sebelumnya dengan nilai baru menggunakan format st.write()
-            count_placeholder.write(f"### Jumlah : {count}")
+            
+            # Tulis jumlahnya di frontend dengan format yang diminta
+            count_placeholder.write(f"Jumlah: {count}")
+            
         except queue.Empty:
             pass
