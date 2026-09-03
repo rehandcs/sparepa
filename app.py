@@ -21,20 +21,21 @@ RTC_CONFIGURATION = RTCConfiguration(
     {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
 )
 
-# Buat antrean (queue) untuk mengirim data jumlah dari video ke UI Streamlit
-result_queue = queue.Queue()
+# 1. PERBAIKAN: Simpan queue di session_state agar tidak terhapus saat halaman me-refresh
+if "result_queue" not in st.session_state:
+    st.session_state.result_queue = queue.Queue()
 
 def video_frame_callback(frame):
     img = frame.to_ndarray(format="bgr24")
     
-    results = model(img)
+    # Tambahkan conf=0.25 agar deteksi lebih peka saat merekam objek
+    results = model.predict(img, conf=0.25)
     annotated_img = results[0].plot()
     
-    # Hitung jumlah sparepart yang terdeteksi
     count = len(results[0].boxes)
     
-    # Kirim angka hitungan ke antrean
-    result_queue.put(count)
+    # 2. Kirim angka ke antrean permanen
+    st.session_state.result_queue.put(count)
     
     return av.VideoFrame.from_ndarray(annotated_img, format="bgr24")
 
@@ -48,18 +49,14 @@ ctx = webrtc_streamer(
 )
 
 st.write("---") 
-
-# 1. Siapkan wadah di bawah kamera
 count_placeholder = st.empty()
-
-# 2. Tampilkan teks default DI LUAR if, agar selalu muncul di HP sejak awal
 count_placeholder.write("Jumlah: 0")
 
-# 3. Update angka hanya jika kamera sudah benar-benar menyala dan diizinkan browser
+# 3. Ambil data secara real-time dari queue permanen
 if ctx and ctx.state.playing:
     while True:
         try:
-            count = result_queue.get(timeout=1.0)
+            count = st.session_state.result_queue.get(timeout=1.0)
             count_placeholder.write(f"Jumlah: {count}")
         except queue.Empty:
             pass
